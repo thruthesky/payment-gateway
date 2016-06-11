@@ -2,13 +2,17 @@
 /**
  *
  */
+global $payment;
+
+
+
 
 if ( payment_check_input() ) return;
 if ( payment_insert_info() ) return;
 if ( payment_insert_log() ) return;
 
 
-$AGS_HASHDATA = md5($StoreId . $GLOBALS['ID'] . $GLOBALS['amt']);
+$AGS_HASHDATA = $payment['AGS_HASHDATA'];
 ?>
 
 <script language=javascript>
@@ -140,11 +144,10 @@ $AGS_HASHDATA = md5($StoreId . $GLOBALS['ID'] . $GLOBALS['amt']);
 
                     if(MakePayMessage(form) == true){
                         Disable_Flag(form);
-
                         var openwin = window.open("AGS_progress.html","popup","width=300,height=160"); //"지불처리중"이라는 팝업창연결 부분
-
                         form.submit();
-                    }else{
+                    }
+                    else{
                         alert("지불에 실패하였습니다.");// 취소시 이동페이지 설정부분
                     }
                 }
@@ -218,47 +221,44 @@ $AGS_HASHDATA = md5($StoreId . $GLOBALS['ID'] . $GLOBALS['amt']);
     }
     -->
 </script>
-<script>
-    function allthegate_form_submit() {
-        Enable_Flag(frmAGS_pay);
-        Pay(frmAGS_pay);
-    }
-    window.addEventListener('load', function(){
-        allthegate_form_submit();
-    });
-
-
-</script>
-<input type="hidden" name="StoreId" maxlength=20 value="<?php echo $StoreId?>">
-<input type="hidden" name="OrdNo" maxlength=40 value="<?php echo $OrdNo?>">
-<input type="text" name="Job" maxlength=12 value="onlycardselfnormal">
-<input type="text" name="Amt" maxlength=12 value="1000">
-<input type="text" name="StoreNm" value="Withcenter, Inc.">
-<input type="text" name="ProdNm" maxlength=300 value="마우스">
-<input type="text" name="MallUrl" value="http://www.allthegate.com">
-<input type="text" name="UserEmail" maxlength=50 value="test@test.com">
+<form name="frmAGS_pay" method=post action="<?php echo home_url()?>/enrollment?mode=AGS_pay_ing">
+<input type="hidden" name="StoreId" maxlength=20 value="<?php echo $payment['allthegate_account']?>">
+<input type="hidden" name="OrdNo" maxlength=40 value="<?php echo $payment['ID']?>">
+<input type="text" name="Job" maxlength=12 value="<?php echo $payment['method']?>">
+<input type="text" name="Amt" maxlength=12 value="<?php echo $payment['amt']?>">
+<input type="text" name="StoreNm" value="<?php echo $payment['company_name']?>">
+<input type="text" name="ProdNm" maxlength=300 value="<?php echo $payment['item_name']?>">
+<input type="text" name="MallUrl" value="<?php echo $payment['MallUrl']?>">
+<input type="text" name="UserEmail" maxlength=50 value="<?php echo $payment['UserEmail']?>">
 
 <!-- 결제창 좌측상단에 상점의 로고이미지(85 * 38)를 표시할 수 있습니다.  잘못된 값을 입력하거나 미입력시 이지스올더게이트의 로고가 표시됩니다. -->
-<input type="text" name=ags_logoimg_url maxlength=200 value="http://www.allthegate.com/hyosung/images/aegis_logo.gif">
+<input type="text" name=ags_logoimg_url maxlength=200 value="<?php echo $payment['ags_logoimg_url']?>">
 
 <!-- 제목은 1컨텐츠당 5자 이내이며, 상점명;상품명;결제금액;제공기간; 순으로 입력해 주셔야 합니다. 입력 예)업체명;판매상품;계산금액;제공기간; -->
-<input type="text" name="SubjectData" value="업체명;판매상품;계산금액;2012.09.01 ~ 2012.09.30;">
-<input type="text" name="UserId" maxlength=20 value="test">
+<input type="text" name="SubjectData" value="<?php echo $payment['SubjectData']?>">
+<input type="text" name="UserId" maxlength=20 value="<?php echo $payment['UserId']?>">
 
 <!-- 카드 & 가상 계좌 결재 용 변수 -->
-<input type="text" name="OrdNm" maxlength=40 value="홍길동"><!--주문자 이름-->
-<input type="text" name="OrdPhone" maxlength=21 value="02-111-1111"><!--주문자 연락처-->
-<input type="text" name="OrdAddr" maxlength=100 value="서울시 강남구 청담동"><!--주문자 주소-->
-<input type="text" name="RcpNm" maxlength=40 value="김길동"><!-- 수진자명-->
-<input type="text" name="RcpPhone" maxlength=21 value="02-111-1111"><!-- 수신자 연락처 -->
-<input type="text" name="DlvAddr" maxlength=100 value="서울시 강남구 청담동"><!--배송지 주소-->
-<input type="text" name="Remark" maxlength=350 value="오후에 배송요망"><!--기타 요구사항 -->
+<input type="text" name="OrdNm" maxlength=40 value="<?php echo $payment['UserName']?>"><!--주문자 이름-->
+<input type="text" name="OrdPhone" maxlength=21 value="<?php echo $payment['UserPhone']?>"><!--주문자 연락처-->
+<input type="text" name="OrdAddr" maxlength=100 value="<?php echo $payment['UserAddress']?>"><!--주문자 주소-->
+<input type="text" name="RcpNm" maxlength=40 value="<?php echo $payment['RecvName']?>"><!-- 수진자명-->
+<input type="text" name="RcpPhone" maxlength=21 value="<?php echo $payment['RecvPhone']?>"><!-- 수신자 연락처 -->
+<input type="text" name="DlvAddr" maxlength=100 value="<?php echo $payment['RecvAddress']?>"><!--배송지 주소-->
+<input type="text" name="Remark" maxlength=350 value="<?php echo $payment['Remark']?>"><!--기타 요구사항 -->
 <input type=text style=width:300px name=CardSelect value=""><!--카드사 선택 : 특정 카드만 사용하고자 하는 경우. 빈 값을 입력하면 모든 카드사 사용. 카드사 코드는 매뉴얼에서 확인-->
 <!-- EO 카드 & 가상 계좌 결재 용 변수 -->
 <!-- 가상계좌 결제 용 변수 -->
 <input type="text" name="MallPage" value="/mall/AGS_VirAcctResult.php"><!-- 결제 입/출금 통보 URL. 도메인을 제외한 나머지 입력 -->
 <input type="text" name="VIRTUAL_DEPODT" value=""><!-- 입금 제한 일. 몇일까지 입금하라는 기간을 정해 줌. 최대 15일. 생략하면 기본 5일. 예) 20001122-->
 
+
+<!-- 핸드폰 결제 용 변수. 핸드폰 결제를 하지 않더라도 값을 넣어 준다. 안그러면 PHP 에서 변수 Undefiend 경고 에러가 난다. -->
+<input type=text name=HP_ID maxlength=10 value="">
+<input type=text name=HP_PWD maxlength=10 value="">
+<input type=text name=HP_SUBID maxlength=10 value="">
+<input type=text  name=ProdCode maxlength=10 value="">
+<input type="hidden" name=HP_UNITType value="1">
 
 
 <!-- 스크립트 및 플러그인에서 값을 설정하는 Hidden 필드  !!수정을 하시거나 삭제하지 마십시오-->
@@ -347,3 +347,13 @@ $AGS_HASHDATA = md5($StoreId . $GLOBALS['ID'] . $GLOBALS['amt']);
 
 <!-- 스크립트 및 플러그인에서 값을 설정하는 Hidden 필드  !!수정을 하시거나 삭제하지 마십시오-->
 
+</form>
+<script>
+    <?php if ( PAYMENT_DEBUG_NO_ACTIVEX ) { ?>
+    // PAYMENT_DEBUG_NO_ACTIVEX 이 참이면 ActiveX 결제 확인 생략.
+    frmAGS_pay.submit();
+    <?php } else { ?>
+    Enable_Flag(frmAGS_pay);
+    Pay(frmAGS_pay);
+    <?php } ?>
+</script>

@@ -4,6 +4,15 @@
  * @desc 기본 함수 라이브러리
  */
 
+
+/**
+ * 랜덤 문자열을 리턴한다.
+ *
+ * @return string
+ */
+function payment_random_string() {
+    return md5(uniqid(mt_rand(), true));
+}
 /**
  *
  * 각 CMS 의 회원 번호를 리턴한다.
@@ -25,13 +34,14 @@ function payment_get_user_id() {
  */
 function payment_check_input() {
 
+    global $payment;
 // min
     if ( ! isset($_REQUEST['min']) || empty($_REQUEST['min']) ) {
         jsAlert("수업 분을 선택하십시오.");
         return -1;
     }
     $min = $_REQUEST['min'];
-    $GLOBALS['payment']['min'] = $min;
+    $payment['min'] = $min;
 
     $amt = 0;
     if ( $min == '25' ) $amt = 120000;
@@ -41,17 +51,22 @@ function payment_check_input() {
         return -1;
     }
 
-    $GLOBALS['payment']['amt'] = $amt;
+    $payment['amt'] = $amt;
 
 // payment method
     if ( ! isset( $_REQUEST['method'] ) || empty($_REQUEST['method']) ) {
         jsAlert("결재 방식을 선택하십시오.");
         return -2;
     }
-    $GLOBALS['payment']['method'] = $_REQUEST['method'];
+    $payment['method'] = $_REQUEST['method'];
 
 
-    $GLOBALS['payment']['values_from_user_form'] = serialize( $_REQUEST );
+    $payment['values_from_user_form'] = serialize( $_REQUEST );
+
+    $date = date("Y-m");
+    $payment['SubjectData'] = "$payment[company_name];$payment[item_name];$payment[amt];$date"; //업체명;판매상품;계산금액;2012.09.01 ~ 2012.09.30;
+    $payment['UserId'] = payment_get_user_id();
+
     return 0;
 }
 
@@ -64,21 +79,33 @@ function payment_check_input() {
  */
 function payment_insert_info() {
     global $payment;
+    $payment['session_id'] = payment_random_string();
     if ( PAYMENT_CMS == 'wordpress' ) {
 
         global $wpdb;
         $table = $wpdb->prefix . 'payment';
 
 // insert db
-        $q = "INSERT INTO $table (user_id, method, amount, stamp_create, values_from_user_form) VALUES ( %d, %s, %d, %d, %s )";
-        $re = $wpdb->query( $wpdb->prepare(
-            $q, payment_get_user_id(), $payment['method'], $payment['amt'], time(), $payment['values_from_user_form'] ) );
+        $q = "INSERT INTO $table
+              (user_id, session_id, paygate, paygate_account, method, currency, amount, stamp_create, values_from_user_form)
+              VALUES ( %d, %s, %s, %s, %s, %s, %d, %d, %s )";
+        $prepare = $wpdb->prepare(
+            $q, payment_get_user_id(),
+            $payment['session_id'],
+            'allthegate',
+            $payment['allthegate_account'],
+            $payment['method'],
+            'KWR',
+            $payment['amt'], time(), $payment['values_from_user_form'] );
+        di($prepare);
+        $re = $wpdb->query( $prepare );
 
         if ( $re === false ) {
             jsAlert("Error on inserting payment information");
             return -4002;
         }
         $payment['ID'] = $wpdb->insert_id;
+        $payment['AGS_HASHDATA'] = md5($payment['allthegate_account'] . $payment['ID'] . $payment['amt']);
         return 0;
     }
     return -1;
@@ -106,7 +133,7 @@ CREATE TABLE IF NOT EXISTS `$table_name` (
   `amount` int(10) unsigned NOT NULL DEFAULT '0',
   `stamp_create` int(10) unsigned NOT NULL DEFAULT '0',
   `stamp_finish` int(10) unsigned NOT NULL DEFAULT '0',
-  `result` char(1) NOT NULL DEFAULT '',
+  `result` char(1) NOT NULL DEFAULT 'N',
   `values_from_user_form` LONGTEXT,
   `values_from_paygate_server` LONGTEXT,
   PRIMARY KEY (`id`),

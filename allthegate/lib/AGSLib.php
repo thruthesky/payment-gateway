@@ -1862,11 +1862,20 @@ class PayLog
 	}
 	function InitLog() 
 	{
-		if( $this->log == "false" ) return true;
+
+		if( $this->log == false ) return true;
 
 		$logfile = $this->homedir. "/log/".PROGRAM."_".TYPE."_".$this->StoreId."_".date("ymd").".log";
 		
 		$this->log_fd = fopen( $logfile, "a+" );
+/*
+		di(PAYMENT_DEBUG); echo "<hr>";
+		di(PAYMENT_LOG_LEVEL); echo "<hr>";
+		di(PAYMENT_LOG_PATH); echo "<hr>";
+		di($logfile);
+		di($this->log_fd);
+		exit;
+*/
 		if( !$this->log_fd ) return false;
 		$this->WriteLog( INFO, "===============================================================" );
 		$this->WriteLog( INFO, "START ".PROGRAM." ".TYPE." (OS:".php_uname('s').php_uname('r').",PHP:".phpversion().")" );
@@ -1874,7 +1883,7 @@ class PayLog
 	}
 	function WriteLog($debug, $data) 
 	{
-		if( $this->log == "false" || !$this->log_fd ) return;
+		if( $this->log == false || !$this->log_fd ) return;
 
 		if(strtoupper($this->logLevel) == "FATAL") $logLevel_int = 1;
 		if(strtoupper($this->logLevel) == "ERROR") $logLevel_int = 2;
@@ -1900,7 +1909,9 @@ class PayLog
 	}
 	function CloseLog($msg)
 	{
-		if( $this->log == "false" ) return;
+		if( $this->log == false ) return;
+
+		if ( !isset($this->REQUEST["Type"]) ) $this->REQUEST["Type"] = "Type-No-Set-By-Mr-Song-JaeHo"; //
 
 		$Transaction_time=GetTime()-$this->starttime;
 		$this->WriteLog( INFO, "END ".$this->REQUEST["Type"]." ".$msg." Transaction time:[".round($Transaction_time,3)."sec]" );
@@ -1911,8 +1922,13 @@ class PayLog
 
 function GetTime()
 {
-    list($sec1, $sec2) = explode(" ", microtime(true));
-    return (float)$sec1 + (float)$sec2;
+	// 에러 수정. microtime 이 PHP 버젼 마다 틀린가 보다. 최신 버젼에는 공백이 없는 것 같다.
+	$mt = microtime(true);
+	if ( strpos( $mt, ' ') !== false ) {
+		list($sec1, $sec2) = explode(" ", microtime(true));
+		return (float)$sec1 + (float)$sec2;
+	}
+	else return $mt;
 }
 
 function SetTimeStamp()
